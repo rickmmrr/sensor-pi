@@ -11,6 +11,69 @@ from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 import adafruit_ahtx0
 
+#for server
+from bottle import route, run, template
+from datetime import datetime
+
+#global
+temp = str("")
+rh = str()
+
+@route("/")
+def index():
+    temp, rh = collectdisplayinfo()
+    dt = datetime.now()
+    time = "{:%Y-%m-%d %H:%M:%S}".format(dt)
+    return template("<b>{{f}} {{r}} : {{d}}</b>", d=time, 
+                    f=temp, r=rh)
+
+def collectdisplayinfo():
+    # Draw a black filled box to clear the image.
+    draw.rectangle((0, 0, width, height), outline=0, fill=0)
+
+    # Shell scripts for system monitoring from here:
+    # https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
+    cmd = "hostname -I | cut -d' ' -f1"
+    IP = "IP: " + subprocess.check_output(cmd, shell=True).decode("utf-8")
+    cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
+    CPU = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%s MB  %.2f%%\", $3,$2,$3*100/$2 }'"
+    MemUsage = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    cmd = 'df -h | awk \'$NF=="/"{printf "Disk: %d/%d GB  %s", $3,$2,$5}\''
+    Disk = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    cmd = "cat /sys/class/thermal/thermal_zone0/temp |  awk '{printf \"CPU Temp: %.1f C\", $(NF-0) / 1000}'"  # pylint: disable=line-too-long
+    Temp = subprocess.check_output(cmd, shell=True).decode("utf-8")
+
+    # Write four lines of text.
+    y = top
+    draw.text((x, y), IP, font=font, fill="#FFFFFF")
+    y += font.getsize(IP)[1]
+    draw.text((x, y), CPU, font=font, fill="#FFFF00")
+    y += font.getsize(CPU)[1]
+    draw.text((x, y), MemUsage, font=font, fill="#00FF00")
+    y += font.getsize(MemUsage)[1]
+    draw.text((x, y), Disk, font=font, fill="#0000FF")
+    y += font.getsize(Disk)[1]
+    draw.text((x, y), Temp, font=font, fill="#FF00FF")
+
+    # temp and himidity
+    y += font.getsize(Temp)[1]
+
+    f_text = "Temp is %3.2f" % f
+
+    draw.text((x, y), f_text, font=font, fill="#FFFF00")
+    y += font.getsize(f_text)[1]
+
+    h_text = "RH is %3.2f" % h
+
+    draw.text((x, y), h_text, font=font, fill="#00FF00")
+    #print("Geeks : %2d, Portal : %5.2f" % (1, 05.333))
+    # Display image.
+    disp.image(image, rotation)
+    return (f_text, h_text)
+
+
+
 # Create sensor object, communicating over the board's default I2C bus
 i2c = board.I2C()  # uses board.SCL and board.SDA
 # i2c = board.STEMMA_I2C()  # For using the built-in STEMMA QT connector on a microcontroller
@@ -86,52 +149,6 @@ x = 0
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
 
+temp, rh = collectdisplayinfo()
 
-
-while True:
-    # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=0)
-
-    # Shell scripts for system monitoring from here:
-    # https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
-    cmd = "hostname -I | cut -d' ' -f1"
-    IP = "IP: " + subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
-    CPU = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%s MB  %.2f%%\", $3,$2,$3*100/$2 }'"
-    MemUsage = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = 'df -h | awk \'$NF=="/"{printf "Disk: %d/%d GB  %s", $3,$2,$5}\''
-    Disk = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "cat /sys/class/thermal/thermal_zone0/temp |  awk '{printf \"CPU Temp: %.1f C\", $(NF-0) / 1000}'"  # pylint: disable=line-too-long
-    Temp = subprocess.check_output(cmd, shell=True).decode("utf-8")
-
-    # Write four lines of text.
-    y = top
-    draw.text((x, y), IP, font=font, fill="#FFFFFF")
-    y += font.getsize(IP)[1]
-    draw.text((x, y), CPU, font=font, fill="#FFFF00")
-    y += font.getsize(CPU)[1]
-    draw.text((x, y), MemUsage, font=font, fill="#00FF00")
-    y += font.getsize(MemUsage)[1]
-    draw.text((x, y), Disk, font=font, fill="#0000FF")
-    y += font.getsize(Disk)[1]
-    draw.text((x, y), Temp, font=font, fill="#FF00FF")
-
-    # temp and himidity
-    y += font.getsize(Temp)[1]
-
-    f_text = "Temp is %3.2f" % f
-
-    draw.text((x, y), f_text, font=font, fill="#FFFF00")
-    y += font.getsize(f_text)[1]
-
-    h_text = "RH is %3.2f" % h
-
-    draw.text((x, y), h_text, font=font, fill="#00FF00")
-    #print("Geeks : %2d, Portal : %5.2f" % (1, 05.333))
-
-
-
-    # Display image.
-    disp.image(image, rotation)
-    time.sleep(0.1)
+run(host="0.0.0.0", port=8080, debug=True)
