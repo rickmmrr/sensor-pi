@@ -19,6 +19,19 @@ from datetime import datetime
 temp = str("")
 rh = str()
 
+curr_set_temp = 0
+
+#get the current temperature setting
+#******************************************
+with open("set_temp.txt", "r") as file:
+    curr_set_temp = int(str(file.read()))
+#********************************************
+
+
+
+
+
+
 @route("/")
 def index():
     temp, rh = collectdisplayinfo()
@@ -35,39 +48,27 @@ def collectdisplayinfo():
     # https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
     cmd = "hostname -I | cut -d' ' -f1"
     IP = "IP: " + subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
-    CPU = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%s MB  %.2f%%\", $3,$2,$3*100/$2 }'"
-    MemUsage = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = 'df -h | awk \'$NF=="/"{printf "Disk: %d/%d GB  %s", $3,$2,$5}\''
-    Disk = subprocess.check_output(cmd, shell=True).decode("utf-8")
-    cmd = "cat /sys/class/thermal/thermal_zone0/temp |  awk '{printf \"CPU Temp: %.1f C\", $(NF-0) / 1000}'"  # pylint: disable=line-too-long
-    Temp = subprocess.check_output(cmd, shell=True).decode("utf-8")
+    
 
-    # Write four lines of text.
+    # Write text
     y = top
     draw.text((x, y), IP, font=font, fill="#FFFFFF")
     y += font.getsize(IP)[1]
-    draw.text((x, y), CPU, font=font, fill="#FFFF00")
-    y += font.getsize(CPU)[1]
-    draw.text((x, y), MemUsage, font=font, fill="#00FF00")
-    y += font.getsize(MemUsage)[1]
-    draw.text((x, y), Disk, font=font, fill="#0000FF")
-    y += font.getsize(Disk)[1]
-    draw.text((x, y), Temp, font=font, fill="#FF00FF")
 
     # temp and himidity
-    y += font.getsize(Temp)[1]
-
     f_text = "Temp is %3.2f" % f
-
-    draw.text((x, y), f_text, font=font, fill="#FFFF00")
-    y += font.getsize(f_text)[1]
+    draw.text((x, y), f_text, font=font_big, fill="#FFFF00")
+    y += font_big.getsize(f_text)[1]
 
     h_text = "RH is %3.2f" % h
+    draw.text((x, y), h_text, font=font_big, fill="#00FF00")
+    y += font_big.getsize(h_text)[1]
 
-    draw.text((x, y), h_text, font=font, fill="#00FF00")
-    #print("Geeks : %2d, Portal : %5.2f" % (1, 05.333))
+    draw.text((x,y), "   Temp set at   ", font=font, fill="#FFFFFF")
+    y += font.getsize("   Temp set at   ")[1]
+    draw.text((x,y),str(curr_set_temp), font=font_big, fill="#FFFF00")
+
+
     # Display image.
     disp.image(image, rotation)
     return (f_text, h_text)
@@ -148,6 +149,8 @@ x = 0
 # same directory as the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+font_big = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 32)
+
 
 temp, rh = collectdisplayinfo()
 
