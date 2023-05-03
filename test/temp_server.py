@@ -23,7 +23,7 @@ curr_set_temp = 0
 
 #get the current temperature setting
 #******************************************
-with open("set_temp.txt", "r") as file:
+with open("/home/pi/python/thermo/set_temp.txt", "r") as file:
     curr_set_temp = int(str(file.read()))
 #********************************************
 
@@ -31,7 +31,9 @@ with open("set_temp.txt", "r") as file:
 
 
 
-
+#**************************************************************
+#           Bottle module server setup
+#***************************************************************
 @route("/")
 def index():
     temp, rh = collectdisplayinfo()
@@ -39,7 +41,13 @@ def index():
     time = "{:%Y-%m-%d %H:%M:%S}".format(dt)
     return template("<b>{{f}} {{r}} : {{d}}</b>", d=time, 
                     f=temp, r=rh)
+#*******************************************************************
 
+
+
+#***********************************************************************
+#   collect and display temperature and computer info on screen
+#************************************************************************
 def collectdisplayinfo():
     # Draw a black filled box to clear the image.
     draw.rectangle((0, 0, width, height), outline=0, fill=0)
@@ -72,6 +80,7 @@ def collectdisplayinfo():
     # Display image.
     disp.image(image, rotation)
     return (f_text, h_text)
+#************************************************************************
 
 
 
@@ -83,6 +92,9 @@ sensor = adafruit_ahtx0.AHTx0(i2c)
 f = (sensor.temperature * 1.8) + 32
 h = sensor.relative_humidity
 
+#*********************************************************
+#       Setup the RGB display
+#*********************************************************
 
 # Configuration for CS and DC pins (these are FeatherWing defaults on M0/M4):
 cs_pin = digitalio.DigitalInOut(board.CE0)
@@ -116,9 +128,6 @@ width = disp.height
 image = Image.new("RGB", (width, height))
 rotation = 0
 
-
-
-
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
 
@@ -135,7 +144,6 @@ backlight = digitalio.DigitalInOut(board.D22)
 backlight.switch_to_output()
 backlight.value = True
 
-
 # Draw some shapes.
 # First define some constants to allow easy resizing of shapes.
 padding = -2
@@ -144,13 +152,12 @@ bottom = height - padding
 # Move left to right keeping track of the current x position for drawing shapes.
 x = 0
 
-
 # Alternatively load a TTF font.  Make sure the .ttf font file is in the
 # same directory as the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
 font_big = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 32)
-
+#*************************************************************************************
 
 temp, rh = collectdisplayinfo()
 
