@@ -1,0 +1,16 @@
+
+
+on the relay.
+IN = the pin from the pi
+DC- = the ground from the pi
+DC+ = 5V from the pi
+
+on the other side of the relay
+COM = ground for heater it does not matter
+NO,NC = one or the other depending on which one 
+        triggers from the pi.
+        NOTE: I need to check on that
+
+GPIO. BCM -- Broadcom chip-specific pin numbers. 
+These pin numbers follow the lower-level numbering 
+system defined by the Raspberry Pi's Broadcom-chip brain.
